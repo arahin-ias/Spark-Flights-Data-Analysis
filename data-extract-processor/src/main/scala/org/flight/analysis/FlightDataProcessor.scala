@@ -10,8 +10,6 @@ import org.flight.analysis.extract.AirlineDataExtract.{findAverageDepartureDelay
 import org.flight.analysis.extract.AirportDataExtract.{findOriginAndDestinationByMaxDistanceToDF, findTotalNumberOfDepartureFlightFromAirportToDF}
 import org.flight.analysis.extract.FlightDataExtract.{airlinesCancelledNumberOfFlightsToDF, findMostCancelledAirlineToDF}
 
-import java.lang.reflect.InvocationTargetException
-
 object FlightDataProcessor {
 
   Logger.getLogger("org").setLevel(Level.ERROR)
@@ -21,19 +19,19 @@ object FlightDataProcessor {
     /**
      * input parameters
      *  1. datasource: path
-     *  2. Give a filter_data path where spark job will write parquet files.
-     *  3. Give job parameters to decide which job run ex: 1
+     *     2. Give a filter_data path where spark job will write parquet files.
+     *     3. Give job parameters to decide which job run ex: 1
      * */
 
     val spark = SparkSession
       .builder()
       .appName("FlightDelaysAndCancellations")
-      .master("local[*]")
+      //.master("local[*]")
       .getOrCreate()
 
     val sc = spark.sparkContext
 
-    val dataSourcePath = args(0)
+    val dataSourcePath = "s3://arahin-spark-test-bucket/data/"
 
     val flightDataLoader: FlightDataLoader = new FlightDataLoader(dataSourcePath + "flights.csv", spark)
     val flightsRDD: RDD[Flight] = flightDataLoader.loadRDD()
@@ -44,75 +42,49 @@ object FlightDataProcessor {
     val airportDataLoader: AirportDataLoader = new AirportDataLoader(dataSourcePath + "airports.csv", spark)
     val airportRDD: RDD[Airport] = airportDataLoader.loadRDD()
 
-    val dataPath = args(1)
+    val dataPath = "s3://arahin-spark-test-bucket/output/"
 
-    args(2) match {
-
-      case "1" => {
-        val airlinesCancelledNumberOfFlights: DataFrame = {
-          airlinesCancelledNumberOfFlightsToDF(flightsRDD, spark, airlineRDD)
-        }
-        DataFileWriterLocal.dataWriter(dataFrame = airlinesCancelledNumberOfFlights,
-          dataPath = dataPath,
-          directoryName = "number_of_cancelled_flights")
-      }
-
-      case "2" => {
-        val findTotalNumberOfDepartureFlightFromAirport: DataFrame = {
-          findTotalNumberOfDepartureFlightFromAirportToDF(flightsRDD, airportRDD, "LGA", spark)
-        }
-        DataFileWriterLocal.dataWriter(dataFrame = findTotalNumberOfDepartureFlightFromAirport,
-          dataPath = dataPath,
-          directoryName = "find_total_number_departure_flight")
-      }
-
-      case "3" => {
-        val findMostCancelledAirline: DataFrame = {
-          findMostCancelledAirlineToDF(flightsRDD, airlineRDD, spark)
-        }
-        DataFileWriterLocal.dataWriter(dataFrame = findMostCancelledAirline,
-          dataPath = dataPath,
-          directoryName = "find_most_cancelled_airline")
-      }
-
-      case "4" => {
-        val findAverageDepartureDelayOfAirliner: DataFrame = {
-          findAverageDepartureDelayOfAirlinerToDF(flightsRDD, airlineRDD, spark)
-        }
-        DataFileWriterLocal.dataWriter(dataFrame = findAverageDepartureDelayOfAirliner,
-          dataPath = dataPath,
-          directoryName = "find_average_departure_delay")
-      }
-
-      case "5" => {
-        val findTotalDistanceFlownEachAirline: DataFrame = {
-          findTotalDistanceFlownEachAirlineToDF(flightsRDD, airlineRDD, spark)
-        }
-        DataFileWriterLocal.dataWriter(dataFrame = findTotalDistanceFlownEachAirline,
-          dataPath = dataPath,
-          directoryName = "find_total_distance_flown")
-      }
-
-      case "6" => {
-        val findOriginAndDestinationByMaxDistance: DataFrame = {
-          findOriginAndDestinationByMaxDistanceToDF(flightsRDD, airportRDD, spark)
-        }
-        DataFileWriterLocal.dataWriter(dataFrame = findOriginAndDestinationByMaxDistance,
-          dataPath = dataPath,
-          directoryName = "find_origin_and_dest_by_max_distance")
-      }
-
-      case _ => {
-        try {
-
-        } catch {
-          case exception: ArrayIndexOutOfBoundsException => println("Array index out of bound, args(1) is missing from programs argument " + exception)
-          case exception: InvocationTargetException => println("Missing parameters from run arguments " + exception)
-        } finally {
-          spark.close()
-        }
-      }
+    val airlinesCancelledNumberOfFlights: DataFrame = {
+      airlinesCancelledNumberOfFlightsToDF(flightsRDD, spark, airlineRDD)
     }
+    DataFileWriterLocal.dataWriter(dataFrame = airlinesCancelledNumberOfFlights,
+      dataPath = dataPath,
+      directoryName = "number_of_cancelled_flights")
+
+    val findTotalNumberOfDepartureFlightFromAirport: DataFrame = {
+      findTotalNumberOfDepartureFlightFromAirportToDF(flightsRDD, airportRDD, "LGA", spark)
+    }
+    DataFileWriterLocal.dataWriter(dataFrame = findTotalNumberOfDepartureFlightFromAirport,
+      dataPath = dataPath,
+      directoryName = "find_total_number_departure_flight")
+
+    val findMostCancelledAirline: DataFrame = {
+      findMostCancelledAirlineToDF(flightsRDD, airlineRDD, spark)
+    }
+    DataFileWriterLocal.dataWriter(dataFrame = findMostCancelledAirline,
+      dataPath = dataPath,
+      directoryName = "find_most_cancelled_airline")
+
+    val findAverageDepartureDelayOfAirliner: DataFrame = {
+      findAverageDepartureDelayOfAirlinerToDF(flightsRDD, airlineRDD, spark)
+    }
+    DataFileWriterLocal.dataWriter(dataFrame = findAverageDepartureDelayOfAirliner,
+      dataPath = dataPath,
+      directoryName = "find_average_departure_delay")
+
+    val findTotalDistanceFlownEachAirline: DataFrame = {
+      findTotalDistanceFlownEachAirlineToDF(flightsRDD, airlineRDD, spark)
+    }
+    DataFileWriterLocal.dataWriter(dataFrame = findTotalDistanceFlownEachAirline,
+      dataPath = dataPath,
+      directoryName = "find_total_distance_flown")
+
+    val findOriginAndDestinationByMaxDistance: DataFrame = {
+      findOriginAndDestinationByMaxDistanceToDF(flightsRDD, airportRDD, spark)
+    }
+    DataFileWriterLocal.dataWriter(dataFrame = findOriginAndDestinationByMaxDistance,
+      dataPath = dataPath,
+      directoryName = "find_origin_and_dest_by_max_distance")
 
     spark.close()
 
