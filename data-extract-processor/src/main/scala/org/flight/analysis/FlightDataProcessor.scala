@@ -31,7 +31,7 @@ object FlightDataProcessor {
 
     val sc = spark.sparkContext
 
-    val dataSourcePath = "s3://arahin-spark-test-bucket/data/"
+    val dataSourcePath = args(0)
 
     val flightDataLoader: FlightDataLoader = new FlightDataLoader(dataSourcePath + "flights.csv", spark)
     val flightsRDD: RDD[Flight] = flightDataLoader.loadRDD()
@@ -42,7 +42,7 @@ object FlightDataProcessor {
     val airportDataLoader: AirportDataLoader = new AirportDataLoader(dataSourcePath + "airports.csv", spark)
     val airportRDD: RDD[Airport] = airportDataLoader.loadRDD()
 
-    val dataPath = "s3://arahin-spark-test-bucket/output/"
+    val dataPath = args(1)
 
     val airlinesCancelledNumberOfFlights: DataFrame = {
       airlinesCancelledNumberOfFlightsToDF(flightsRDD, spark, airlineRDD)
